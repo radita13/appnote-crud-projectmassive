@@ -52,7 +52,14 @@ export const createNote = (req, res) => {
 export const getAllNotes = (req, res) => {
     const sql = 'SELECT * FROM notes';
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).send(err);
+        if (err) {
+            console.error('Error fetching notes:', err);
+            return res.status(500).send({
+                success: false,
+                message: 'Failed to fetch notes',
+                error: err.message
+            });
+        };
 
         const formattedResults = results.map(note => {
             const formattedDatetime = new Date(note.datetime).toLocaleString('en-CA', {
@@ -61,6 +68,12 @@ export const getAllNotes = (req, res) => {
             });
 
             return { ...note, datetime: formattedDatetime };
+        });
+
+        console.log({
+            success: true,
+            message: 'Notes fetched successfully',
+            data: formattedResults
         });
 
         res.send({
@@ -76,11 +89,27 @@ export const getNoteById = (req, res) => {
     const { id } = req.params;
     const sql = 'SELECT * FROM notes WHERE id = ?';
     db.query(sql, [id], (err, result) => {
-        if (err) return res.status(500).send(err);
-        if (result.length === 0) return res.status(404).send({
-            success: false,
-            message: 'Note get not found'
-        });
+        if (err) {
+            console.error('Error fetching note:', err);
+            return res.status(500).send({
+                success: false,
+                message: 'Failed to fetch note',
+                error: err.message
+            });
+        }
+
+        if (result.length === 0) {
+            console.error({
+                success: false,
+                message: 'Note not found',
+                data: { "ID not found": id }
+            });
+            return res.status(404).send({
+                success: false,
+                message: 'Note not found',
+                data: { "ID not found": id }
+            });
+        }
 
         const formattedDatetime = new Date(result[0].datetime).toLocaleString('en-CA', {
             timeZone: 'Asia/Jakarta',
@@ -102,46 +131,159 @@ export const updateNote = (req, res) => {
     const { id } = req.params;
     const { title, datetime, note } = req.body;
 
-    const formattedDatetime = datetime.length === 10
-        ? `${datetime} ${new Date().toTimeString().slice(0, 8)}`
-        : datetime;
+    // Validasi datetime harus dalam format lengkap YYYY-MM-DD
+    const datetimeRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!datetimeRegex.test(datetime)) {
+        console.error({
+            success: false,
+            message: 'Invalid datetime format. Please provide the full date in the format YYYY-MM-DD.',
+            data: { datetime }
+        });
+        return res.status(400).send({
+            success: false,
+            message: 'Invalid datetime format. Please provide the full date in the format YYYY-MM-DD.',
+            data: { datetime }
+        });
+    }
 
-    const sql = 'UPDATE notes SET title = ?, datetime = ?, note = ? WHERE id = ?';
-    db.query(sql, [title, formattedDatetime, note, id], (err, result) => {
-        if (result.affectedRows === 0) {
+    const formattedDatetime = `${datetime} ${new Date().toTimeString().slice(0, 8)}`;
+
+    // Query untuk mendapatkan note sebelumnya
+    const selectSql = 'SELECT note FROM notes WHERE id = ?';
+    db.query(selectSql, [id], (selectErr, selectResult) => {
+        if (selectErr) {
+            console.error({
+                success: false,
+                message: 'Failed to fetch existing note',
+                error: selectErr
+            });
             return res.status(500).send({
                 success: false,
-                message: 'Note update failed due to invalid ID',
-                data: err
+                message: 'Failed to fetch existing note',
+                error: selectErr
             });
         }
 
-        res.send({
-            success: true,
-            message: 'Note updated successfully',
-            data: { id, title, datetime: formattedDatetime, note }
+        if (selectResult.length === 0) {
+            console.error({
+                success: false,
+                message: 'Note not found',
+                data: { "ID not found": id }
+            });
+            return res.status(404).send({
+                success: false,
+                message: 'Note not found',
+                data: { "ID not found": id }
+            });
+        }
+
+        const existingNote = selectResult[0].note;
+        const updatedNote = note || existingNote;
+
+        // Query untuk mengupdate note
+        const updateSql = 'UPDATE notes SET title = ?, datetime = ?, note = ? WHERE id = ?';
+        db.query(updateSql, [title, formattedDatetime, updatedNote, id], (updateErr, updateResult) => {
+            if (updateErr) {
+                console.error({
+                    success: false,
+                    message: 'Note update failed',
+                    error: updateErr
+                });
+                return res.status(500).send({
+                    success: false,
+                    message: 'Note update failed',
+                    error: updateErr
+                });
+            }
+
+            if (updateResult.affectedRows === 0) {
+                console.error({
+                    success: false,
+                    message: 'Note update failed due to invalid ID',
+                    data: { id }
+                });
+                return res.status(404).send({
+                    success: false,
+                    message: 'Note update failed due to invalid ID',
+                    data: { id }
+                });
+            }
+
+            console.log({
+                success: true,
+                message: 'Note updated successfully',
+                data: { id, title, datetime: formattedDatetime, note: updatedNote }
+            });
+
+            res.send({
+                success: true,
+                message: 'Note updated successfully',
+                data: { id, title, datetime: formattedDatetime, note: updatedNote }
+            });
         });
     });
 };
 
-
 // Hapus note (delete by id)
 export const deleteNote = (req, res) => {
     const { id } = req.params;
-    const sql = 'DELETE FROM notes WHERE id = ?';
-    db.query(sql, [id], (err, result) => {
-        if (result.affectedRows === 0) {
+
+    // Query untuk mendapatkan note sebelumnya
+    const selectSql = 'SELECT note FROM notes WHERE id = ?';
+    db.query(selectSql, [id], (selectErr, selectResult) => {
+        if (selectErr) {
+            console.error({
+                success: false,
+                message: 'Failed to delete existing note',
+                error: selectErr
+            });
             return res.status(500).send({
                 success: false,
-                message: 'Note update failed due to invalid ID',
-                data: err
+                message: 'Failed to delete existing note',
+                error: selectErr
             });
         }
+
+        if (selectResult.length === 0) {
+            console.error({
+                success: false,
+                message: 'Note not found',
+                data: { "ID not found": id }
+            });
+            return res.status(404).send({
+                success: false,
+                message: 'Note not found',
+                data: { "ID not found": id }
+            });
+        }
+    });
+
+    // Query untuk menghapus note
+    const deleteSql = 'DELETE FROM notes WHERE id = ?';
+    db.query(deleteSql, [id], (deleteErr, deleteResult) => {
+        if (deleteErr) {
+            console.error({
+                success: false,
+                message: 'Failed to delete the note',
+                error: deleteErr
+            });
+            return res.status(500).send({
+                success: false,
+                message: 'Failed to delete the note',
+                error: deleteErr
+            });
+        }
+
+        console.log({
+            success: true,
+            message: 'Note deleted successfully',
+            data: deleteResult
+        });
 
         res.send({
             success: true,
             message: 'Note deleted successfully',
-            data: result
+            data: deleteResult
         });
     });
 };
