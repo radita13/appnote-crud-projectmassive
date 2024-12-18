@@ -40,6 +40,28 @@ Aplikasi ini dirancang untuk membantu pengguna dalam membuat, melihat, mengedit,
      DELETE FROM notes WHERE id = ?
    ```
 
+## Database
+```bash
+CREATE DATABASE notes_db;
+USE notes_db;
+create table notes
+(
+    id    bigint auto_increment primary key,
+    title    text     not null,
+    datetime    datetime not null,
+    note    longtext not null
+);
+```
+
+## Env
+```bash
+APP_PORT=3000
+HOST=localhost
+USER=root
+PASSWORD=
+DATABASE=notes_db
+```
+
 ## Setup install project
 
 ### Stack teknologi 
@@ -54,3 +76,23 @@ Aplikasi ini dirancang untuk membantu pengguna dalam membuat, melihat, mengedit,
 - express
 - mysql
 - nodemon
+
+## Clone Repository
+1. Buka Terminal atau Command Prompt.
+   Navigasikan ke direktori tempat Anda ingin menyimpan project ini.
+2. Clone Repository dari GitHub.
+   Jalankan perintah berikut untuk menyalin repository ke komputer Anda:
+```bash
+git clone https://github.com/radita13/appnote-crud-projectmassive.git
+```
+3. Masuk ke Direktori Project.
+    Setelah clone selesai, pindah ke folder project:
+```bash
+cd appnote-crud-projectmassive
+```
+4. Install Dependencies
+   Jalankan perintah berikut untuk menginstal semua dependencies yang dibutuhkan:
+```bash
+    npm install
+```
+
