@@ -82,9 +82,9 @@ DATABASE=notes_db
    Navigasikan ke direktori tempat Anda ingin menyimpan project ini.
 2. Clone Repository dari GitHub.
    Jalankan perintah berikut untuk menyalin repository ke komputer Anda:
-```bash
+**```bash
 git clone https://github.com/radita13/appnote-crud-projectmassive.git
-```
+```**
 3. Masuk ke Direktori Project.
     Setelah clone selesai, pindah ke folder project:
 ```bash
@@ -93,6 +93,6 @@ cd appnote-crud-projectmassive
 4. Install Dependencies
    Jalankan perintah berikut untuk menginstal semua dependencies yang dibutuhkan:
 ```bash
-    npm install
+npm install
 ```
 
