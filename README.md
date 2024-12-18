@@ -84,7 +84,7 @@ DATABASE=notes_db
    Jalankan perintah berikut untuk menyalin repository ke komputer Anda:
 **```bash
 git clone https://github.com/radita13/appnote-crud-projectmassive.git
-```**
+**
 3. Masuk ke Direktori Project.
     Setelah clone selesai, pindah ke folder project:
 ```bash
